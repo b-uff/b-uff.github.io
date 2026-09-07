@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lookback · Big Brother DR Charts</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1>🕰️ Lookback</h1>
+  <div class="panel lookback-panel">
+    <div class="controls">
+      <label>Season <select id="tm-season"></select></label>
+      <label>Week <select id="tm-week"></select></label>
+      <label>Episode <select id="tm-episode"></select></label>
+    </div>
+    <table class="plain" id="tm-table">
+      <thead><tr><th>Rank</th><th>Houseguest</th><th>Cumulative DRs</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="muted" id="tm-empty" style="display:none">Import a season on the Charts page first.</p>
+  </div>
+  <div class="panel">
+    <div class="controls">
+      <h2>DR Race</h2>
+      <button id="race-play">Play</button>
+      <label>Speed <select id="race-speed"><option value="1200">0.5x</option><option value="700" selected>1x</option><option value="350">2x</option><option value="150">4x</option></select></label>
+      <span class="muted" id="race-label"></span>
+    </div>
+    <input type="range" id="race-scrub" min="0" max="0" value="0" style="width:100%;accent-color:#334155">
+    <div id="timeline-bars" style="margin-top:14px"></div>
+  </div>
+</main>
+<script src="js/published-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/common.js?v=2"></script>
+<script>
+renderNav('timemachine.html');
+renderFooter();
+
+const seasonSel = document.getElementById('tm-season');
+const weekSel = document.getElementById('tm-week');
+const epSel = document.getElementById('tm-episode');
+const raceScrub = document.getElementById('race-scrub');
+const racePlay = document.getElementById('race-play');
+const raceSpeed = document.getElementById('race-speed');
+const raceLabel = document.getElementById('race-label');
+const raceRows = new Map();
+let raceTimer = null;
+
+function currentSeason() { return Store.getSeason(seasonSel.value); }
+function chartName(season, player) {
+  const playerIndex = season.players.indexOf(player);
+  const row = season.sourceGrid && season.sourceGrid[season.headerRows + playerIndex];
+  const nameCell = row && row.find(cell => cell && cell.c === 1);
+  return nameCell && nameCell.display ? nameCell.display : player.name;
+}
+
+function populateSeasons() {
+  const ids = Store.listSeasonIds();
+  seasonSel.innerHTML = ids.map(id => `<option value="${escapeHtml(id)}">${escapeHtml(id)}</option>`).join('');
+  document.getElementById('tm-empty').style.display = ids.length ? 'none' : 'block';
+  populateWeeks();
+}
+
+function populateWeeks() {
+  const s = currentSeason();
+  weekSel.innerHTML = '';
+  if (!s) { epSel.innerHTML = ''; return; }
+  s.weeks.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.weekNum; opt.textContent = 'Week ' + w.weekNum;
+    weekSel.appendChild(opt);
+  });
+  raceScrub.max = Math.max(0, s.episodes.length - 1);
+  raceScrub.value = raceScrub.max;
+  raceRows.clear();
+  document.getElementById('timeline-bars').replaceChildren();
+  populateEpisodes();
+  renderRace(false);
+  renderResults();
+}
+
+function populateEpisodes() {
+  const s = currentSeason();
+  epSel.innerHTML = '';
+  if (!s) return;
+  const week = s.weeks.find(w => String(w.weekNum) === weekSel.value);
+  const episodes = week ? week.episodes : s.episodes;
+  episodes.forEach(epNum => {
+    const opt = document.createElement('option');
+    opt.value = epNum; opt.textContent = 'Episode ' + epNum;
+    epSel.appendChild(opt);
+  });
+}
+
+seasonSel.addEventListener('change', populateWeeks);
+weekSel.addEventListener('change', () => {
+  populateEpisodes();
+  renderResults();
+});
+epSel.addEventListener('change', () => {
+  renderResults();
+  const season = currentSeason();
+  const index = season.episodes.indexOf(Number(epSel.value));
+  if (index >= 0) {
+    raceScrub.value = index;
+    renderRace(false);
+  }
+});
+
+function renderResults() {
+  const s = currentSeason();
+  const tbody = document.querySelector('#tm-table tbody');
+  tbody.innerHTML = '';
+  if (!s || !epSel.value) return;
+  const chosenEpisode = parseFloat(epSel.value);
+  const rows = s.players.map(p => {
+    const { total } = playerTotalThroughEpisode(p, chosenEpisode);
+    const episode = p.episodes.find(item => item.episode === chosenEpisode);
+    const evicted = !!episode && (episode.ghost || episode.blankDead || episode.type === 'g' || episode.type === 'empty');
+    return { name: p.name, chartName: chartName(s, p), total, evicted };
+  });
+
+  rows.sort((a, b) => (b.total - a.total) || a.name.localeCompare(b.name));
+
+  rows.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'lookback-row' + (r.evicted ? ' evicted' : '');
+    tr.style.setProperty('--lookback-delay', (i * 35) + 'ms');
+    tr.innerHTML = `<td>${rankChipHtml(i+1)}</td><td>${nameCellHtml(r.chartName, s.id, r.name)}</td><td>${formatNum(r.total)}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function stopRace() {
+  if (raceTimer) clearInterval(raceTimer);
+  raceTimer = null;
+  racePlay.textContent = 'Play';
+}
+
+function formatRaceTotal(total) {
+  return String(Math.round(total));
+}
+
+function visualRaceUnits(episode) {
+  return isCountedCell(episode) ? episode.value : 0;
+}
+
+function animateRaceTotal(row, total, duration) {
+  const value = row.querySelector('.bar-value');
+  const from = Number(row.dataset.total || total);
+  if (row.animationFrame) cancelAnimationFrame(row.animationFrame);
+  if (!duration || from === total) {
+    value.textContent = formatRaceTotal(total);
+    row.dataset.total = total;
+    return;
+  }
+  const started = performance.now();
+  function frame(now) {
+    const progress = Math.min(1, (now - started) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    value.textContent = formatRaceTotal(from + (total - from) * eased);
+    if (progress < 1) row.animationFrame = requestAnimationFrame(frame);
+    else row.dataset.total = total;
+  }
+  row.animationFrame = requestAnimationFrame(frame);
+}
+
+function renderRace(animate) {
+  const season = currentSeason();
+  if (!season) return;
+  const episodeIndex = Number(raceScrub.value);
+  const episode = season.episodes[episodeIndex];
+  raceLabel.textContent = 'Episode ' + episode + ' (' + (episodeIndex + 1) + ' / ' + season.episodes.length + ')';
+  const maximum = Math.max(1, ...season.players.map(player => playerTotal(player)));
+  const rows = season.players.map(player => {
+    const total = playerTotalThroughEpisode(player, episode).total;
+    const segments = player.episodes
+      .filter(item => item.episode <= episode && isCountedCell(item))
+      .map(item => ({
+        key: item.episode,
+        visualValue: item.value,
+        zero: item.value === 0,
+        color: item.color || colorForName(player.name)
+      }));
+    return {
+      key: player.name,
+      name: chartName(season, player),
+      total,
+      segments
+    };
+  }).sort((a, b) => (b.total - a.total) || a.name.localeCompare(b.name));
+  const container = document.getElementById('timeline-bars');
+  const duration = animate ? Math.max(120, Math.round(Number(raceSpeed.value) * 0.82)) : 0;
+  container.style.height = (rows.length * 29) + 'px';
+  rows.forEach((entry, index) => {
+    let row = raceRows.get(entry.key);
+    if (!row) {
+      row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `<div class="bar-label">${escapeHtml(entry.name)}</div><div class="bar-track"><div class="bar-value"></div></div>`;
+      row.segments = new Map();
+      raceRows.set(entry.key, row);
+      container.appendChild(row);
+    }
+    row.style.setProperty('--race-duration', duration + 'ms');
+    row.style.transform = `translateY(${index * 29}px)`;
+    const track = row.querySelector('.bar-track');
+    const activeKeys = new Set(entry.segments.map(segment => String(segment.key)));
+    for (const [key, segment] of row.segments) {
+      if (!activeKeys.has(key)) {
+        segment.remove();
+        row.segments.delete(key);
+      }
+    }
+    let offset = 0;
+    for (const segmentData of entry.segments) {
+      const key = String(segmentData.key);
+      let segment = row.segments.get(key);
+      const width = (segmentData.visualValue / maximum) * 100;
+      if (!segment) {
+        segment = document.createElement('div');
+        segment.className = 'bar-segment';
+        segment.style.background = segmentData.color;
+        segment.style.left = offset + '%';
+        segment.style.width = segmentData.zero ? '3px' : '0%';
+        if (segmentData.zero) segment.classList.add('zero-segment');
+        row.segments.set(key, segment);
+        track.appendChild(segment);
+        requestAnimationFrame(() => { segment.style.width = width + '%'; });
+      } else {
+        segment.style.left = offset + '%';
+        segment.style.width = width + '%';
+      }
+      offset += width;
+    }
+    row.querySelector('.bar-value').style.left = (entry.total / maximum) * 100 + '%';
+    animateRaceTotal(row, entry.total, duration);
+  });
+}
+
+racePlay.addEventListener('click', () => {
+  if (raceTimer) { stopRace(); return; }
+  racePlay.textContent = 'Pause';
+  raceTimer = setInterval(() => {
+    const next = Number(raceScrub.value) + 1;
+    if (next > Number(raceScrub.max)) { stopRace(); return; }
+    raceScrub.value = next;
+    renderRace(true);
+  }, Number(raceSpeed.value));
+});
+raceScrub.addEventListener('input', () => { stopRace(); renderRace(false); });
+raceSpeed.addEventListener('change', () => { if (raceTimer) { stopRace(); racePlay.click(); } });
+
+populateSeasons();
+if (seasonSel.value) renderResults();
+</script>
+</body>
+</html>

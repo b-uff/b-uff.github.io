@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rankings · Big Brother DR Charts</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <h1>🏅 Rankings</h1>
+
+  <div class="panel">
+    <h2>👑 Most DRs per season</h2>
+    <table class="plain" id="top-per-season-table">
+      <thead><tr><th>Season</th><th>Houseguest</th><th>Placement</th><th># of DRs</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>📊 Season ranking (by total DRs)</h2>
+    <table class="plain" id="season-rank-table">
+      <thead><tr><th>Rank</th><th>Season</th><th>Total DRs</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2>🎯 Placement rankings</h2>
+    <div class="controls">
+      <label><input type="checkbox" id="pr-inc-us" checked> Include BBUS</label>
+      <label><input type="checkbox" id="pr-inc-can" checked> Include BBCAN</label>
+      <label><input type="checkbox" id="pr-inc-spinoff" checked> Include spinoffs</label>
+    </div>
+    <div id="placement-rankings"></div>
+  </div>
+
+  <div class="panel">
+    <h2>🔥 Top 5 DRs by number of houseguests remaining</h2>
+    <div class="controls">
+      <label><input type="checkbox" id="hr-inc-us" checked> Include BBUS</label>
+      <label><input type="checkbox" id="hr-inc-can" checked> Include BBCAN</label>
+      <label><input type="checkbox" id="hr-inc-spinoff" checked> Include spinoffs</label>
+    </div>
+    <div id="houseguests-remaining"></div>
+  </div>
+
+  <p class="muted" id="rk-empty" style="display:none">Import a season on the Charts page first.</p>
+</main>
+<script src="js/published-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/common.js?v=2"></script>
+<script>
+renderNav('rankings.html');
+renderFooter();
+
+const seasons = Store.getAllSeasons();
+document.getElementById('rk-empty').style.display = seasons.length ? 'none' : 'block';
+
+function renderTopPerSeason() {
+  const orderedSeasons = seasons.slice().reverse();
+  const tbody = document.querySelector('#top-per-season-table tbody');
+  const ordinal = placement => {
+    const value = Math.round(placement);
+    const remainder = value % 100;
+    if (remainder >= 11 && remainder <= 13) return value + 'th';
+    return value + ({ 1: 'st', 2: 'nd', 3: 'rd' }[value % 10] || 'th');
+  };
+  const rowsHtml = [];
+  for (const s of orderedSeasons) {
+    if (!s.players.length) continue;
+    const maxDr = Math.max(...s.players.map(p => playerTotal(p)));
+    const tied = s.players.filter(p => playerTotal(p) === maxDr).sort((a, b) => (a.placement - b.placement) || a.name.localeCompare(b.name));
+    tied.forEach((p, index) => {
+      const seasonCell = index === 0 ? `<td class="rank-season" rowspan="${tied.length}">${escapeHtml(s.id)}</td>` : '';
+      const drCell = index === 0 ? `<td class="rank-dr" rowspan="${tied.length}">${formatNum(maxDr)}</td>` : '';
+      rowsHtml.push(`<tr>${seasonCell}<td class="rank-houseguest" data-name="${escapeHtml(p.name)}">${nameCellHtml(p.name, s.id)}</td><td class="rank-placement" data-value="${formatNum(p.placement)}">${ordinal(p.placement)}</td>${drCell}</tr>`);
+    });
+  }
+  tbody.innerHTML = rowsHtml.join('');
+}
+
+function renderSeasonRanking() {
+  const rows = seasons.map(s => ({
+    id: s.id,
+    total: s.players.reduce((sum, p) => sum + playerTotal(p), 0)
+  })).sort((a, b) => (b.total - a.total) || a.id.localeCompare(b.id));
+  const tbody = document.querySelector('#season-rank-table tbody');
+  tbody.innerHTML = rows.map((r, i) => `<tr><td>${rankChipHtml(i+1)}</td><td>${escapeHtml(r.id)}</td><td>${formatNum(r.total)}</td></tr>`).join('');
+}
+
+function seasonsMatchingFilters(incUs, incCan, incSpinoff) {
+  return seasons.filter(s => {
+    const kind = seasonKind(s.id);
+    if (kind === 'us') return incUs;
+    if (kind === 'can') return incCan;
+    return incSpinoff;
+  });
+}
+
+function renderPlacementRankings() {
+  const incUs = document.getElementById('pr-inc-us').checked;
+  const incCan = document.getElementById('pr-inc-can').checked;
+  const incSpinoff = document.getElementById('pr-inc-spinoff').checked;
+  const filtered = seasonsMatchingFilters(incUs, incCan, incSpinoff);
+
+  const container = document.getElementById('placement-rankings');
+  container.innerHTML = '';
+  const byPlacement = new Map();
+  for (const s of filtered) {
+    for (const p of s.players) {
+      if (p.placement === null || p.placement === undefined) continue;
+      const key = Math.round(p.placement);
+      if (!byPlacement.has(key)) byPlacement.set(key, []);
+      byPlacement.get(key).push({ name: p.name, season: s.id, dr: playerTotal(p) });
+    }
+  }
+  const placements = Array.from(byPlacement.keys()).sort((a, b) => a - b);
+  if (placements.length === 0) {
+    container.innerHTML = '<p class="muted">No seasons match the current filters.</p>';
+    return;
+  }
+  for (const placement of placements) {
+    const entries = byPlacement.get(placement).sort((a, b) => (b.dr - a.dr) || a.name.localeCompare(b.name));
+    const label = document.createElement('div');
+    label.style.fontWeight = '600';
+    label.style.margin = '10px 0 4px';
+    label.textContent = ordinal(placement) + ' place';
+    container.appendChild(label);
+    const row = document.createElement('div');
+    row.className = 'hscroll-row';
+    for (const e of entries) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<div>${nameCellHtml(e.name, e.season)}</div><div class="muted">${escapeHtml(e.season)}</div><div>${formatNum(e.dr)} DRs</div>`;
+      row.appendChild(card);
+    }
+    container.appendChild(row);
+  }
+}
+
+function ordinal(n) {
+  const s = ['th','st','nd','rd'], v = n % 100;
+  return n + (s[(v-20)%10] || s[v] || s[0]);
+}
+
+function renderHouseguestsRemaining() {
+  const incUs = document.getElementById('hr-inc-us').checked;
+  const incCan = document.getElementById('hr-inc-can').checked;
+  const incSpinoff = document.getElementById('hr-inc-spinoff').checked;
+  const filtered = seasonsMatchingFilters(incUs, incCan, incSpinoff);
+
+  const container = document.getElementById('houseguests-remaining');
+  container.innerHTML = '';
+
+  // Derive house size per episode directly from the data (per season - "how
+  // many houseguests remaining" only makes sense within one season's own
+  // episode timeline), then pool every (player, episode, value) entry across
+  // every season that matches the filters into buckets keyed by that
+  // remaining-count.
+  const byRemaining = new Map(); // remainingCount -> [{name, season, episode, value}]
+  for (const season of filtered) {
+    const remainingByEpisode = new Map();
+    for (const p of season.players) {
+      for (const e of p.episodes) {
+        if (e.type !== 'n') continue;
+        remainingByEpisode.set(e.episode, (remainingByEpisode.get(e.episode) || 0) + 1);
+      }
+    }
+    for (const p of season.players) {
+      for (const e of p.episodes) {
+        if (e.type !== 'n' || e.ghost) continue;
+        const remaining = remainingByEpisode.get(e.episode);
+        if (!byRemaining.has(remaining)) byRemaining.set(remaining, []);
+        byRemaining.get(remaining).push({ name: p.name, season: season.id, episode: e.episode, value: e.value });
+      }
+    }
+  }
+
+  const remainingCounts = Array.from(byRemaining.keys()).sort((a, b) => b - a);
+  if (remainingCounts.length === 0) {
+    container.innerHTML = '<p class="muted">No seasons match the current filters.</p>';
+    return;
+  }
+  for (const rc of remainingCounts) {
+    const top5 = byRemaining.get(rc).sort((a, b) => (b.value - a.value) || a.name.localeCompare(b.name)).slice(0, 5);
+    const label = document.createElement('div');
+    label.style.fontWeight = '600';
+    label.style.margin = '10px 0 4px';
+    label.textContent = rc + ' houseguests remaining';
+    container.appendChild(label);
+    const row = document.createElement('div');
+    row.className = 'hscroll-row';
+    for (const [idx, e] of top5.entries()) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<div>${nameCellHtml(e.name, e.season)}</div><div class="muted">${escapeHtml(e.season)} &middot; Episode ${e.episode}</div><div>${formatNum(e.value)} DRs</div>`;
+      row.appendChild(card);
+    }
+    container.appendChild(row);
+  }
+}
+
+if (seasons.length) {
+  renderTopPerSeason();
+  renderSeasonRanking();
+  renderPlacementRankings();
+  renderHouseguestsRemaining();
+
+  ['pr-inc-us','pr-inc-can','pr-inc-spinoff'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderPlacementRankings));
+  ['hr-inc-us','hr-inc-can','hr-inc-spinoff'].forEach(id =>
+    document.getElementById(id).addEventListener('change', renderHouseguestsRemaining));
+}
+</script>
+</body>
+</html>

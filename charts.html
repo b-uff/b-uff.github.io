@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Charts | Big Brother DR Charts</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="public-charts-page">
+<main>
+  <h1>Diary Room Count Charts</h1>
+  <div class="panel public-chart-panel">
+    <div class="chart-workspace">
+      <aside class="season-sidebar" aria-label="Seasons">
+        <h2>Seasons</h2>
+        <div id="season-tabs" class="season-tabs"></div>
+      </aside>
+      <div class="chart-content">
+        <div class="table-scroll">
+          <div id="sortable-reference-chart" class="sortable-reference-chart" hidden></div>
+          <p id="empty-note" class="muted" hidden>No published charts are available yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="js/published-data.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/common.js?v=2"></script>
+<script>
+renderNav('charts.html');
+renderFooter();
+
+const tabs = document.getElementById('season-tabs');
+const sortableReferenceChart = document.getElementById('sortable-reference-chart');
+const emptyNote = document.getElementById('empty-note');
+const decodedImages = new Map();
+let currentSeasonId = null;
+
+function preloadReferenceImages() {
+  for (const season of Store.getAllSeasons()) {
+    if (!season.referenceImage || decodedImages.has(season.id)) continue;
+    const image = new Image();
+    image.src = season.referenceImage;
+    decodedImages.set(season.id, image);
+  }
+}
+
+function showSeason(id) {
+  currentSeasonId = id;
+  const season = Store.getSeason(id);
+  tabs.querySelectorAll('button').forEach(button => {
+    button.classList.toggle('active', button.dataset.seasonId === id);
+  });
+  if (!season || !season.referenceImage) {
+    sortableReferenceChart.hidden = true;
+    sortableReferenceChart.replaceChildren();
+    emptyNote.hidden = false;
+    return;
+  }
+  emptyNote.hidden = true;
+  renderSortableReferenceChart(season);
+}
+
+function renderSortableReferenceChart(season) {
+  if (!season.sourceGrid || !season.rowHeights || !season.columnWidths) {
+    emptyNote.hidden = false;
+    return;
+  }
+  const image = decodedImages.get(season.id);
+  const render = () => {
+    if (currentSeasonId !== season.id) return;
+    const scaleY = image.naturalHeight / season.rowHeights.reduce((sum, height) => sum + height, 0);
+    const scaleX = image.naturalWidth / season.columnWidths.reduce((sum, width) => sum + width, 0);
+    const bodyStart = season.headerRows;
+    const bodyEnd = season.rowHeights.length - season.footerRows;
+    const rowBoundaries = [0];
+    let sourceY = 0;
+    for (const height of season.rowHeights) {
+      sourceY += height;
+      rowBoundaries.push(Math.round(sourceY * scaleY));
+    }
+    rowBoundaries[rowBoundaries.length - 1] = image.naturalHeight;
+    const strip = rowIndex => {
+      const element = document.createElement('div');
+      const isInteriorPlayerRow = rowIndex > bodyStart && rowIndex < bodyEnd;
+      const top = rowBoundaries[rowIndex] + (isInteriorPlayerRow ? 1 : 0) - (rowIndex === bodyEnd ? 1 : 0);
+      const isPlayerRow = rowIndex >= bodyStart && rowIndex < bodyEnd;
+      const bottom = rowBoundaries[rowIndex + 1] - (rowIndex === bodyEnd - 1 ? 1 : 0);
+      element.className = 'reference-strip';
+      element.style.width = image.naturalWidth + 'px';
+      element.style.height = (bottom - top) + 'px';
+      element.style.backgroundImage = `url("${season.referenceImage}")`;
+      element.style.backgroundSize = `${image.naturalWidth}px ${image.naturalHeight}px`;
+      element.style.backgroundPosition = `0 -${top}px`;
+      return element;
+    };
+    const header = document.createElement('div');
+    header.className = 'reference-header';
+    const body = document.createElement('div');
+    const footer = document.createElement('div');
+    for (let row = 0; row < bodyStart; row++) header.appendChild(strip(row));
+    for (let row = bodyStart; row < bodyEnd; row++) {
+      const playerRow = strip(row);
+      playerRow.classList.add('player-strip');
+      if (row > bodyStart) playerRow.classList.add('interior-player-strip');
+      if (row === bodyEnd - 1) playerRow.classList.add('last-player-strip');
+      playerRow.dataset.sourceRow = row;
+      body.appendChild(playerRow);
+    }
+    for (let row = bodyEnd; row < season.rowHeights.length; row++) footer.appendChild(strip(row));
+    sortableReferenceChart.replaceChildren(header, body, footer);
+    sortableReferenceChart.hidden = false;
+    let sortState = { column: null, direction: 1 };
+    header.addEventListener('click', event => {
+      const imageX = event.offsetX / scaleX;
+      let column = 0;
+      let boundary = 0;
+      for (const width of season.columnWidths) {
+        if (imageX < boundary + width) break;
+        boundary += width;
+        column++;
+      }
+      const direction = sortState.column === column ? -sortState.direction : (column <= 1 ? 1 : -1);
+      sortState = { column, direction };
+      const rows = Array.from(body.children);
+      const rank = row => {
+        const gridRow = season.sourceGrid[Number(row.dataset.sourceRow)];
+        const cell = gridRow.find(item => item && item.c === column);
+        const placement = Number(gridRow.find(item => item && item.c === 0).display);
+        if (!cell || cell.display === '') return { tier: 2, value: 0, placement };
+        const player = season.players[Number(row.dataset.sourceRow) - bodyStart];
+        const episode = player.episodes.find(item => item.col === column);
+        return { tier: episode && episode.ghost ? 1 : 0, value: episode && episode.value !== null ? episode.value : Number(cell.display), placement };
+      };
+      rows.sort((a, b) => {
+        const aRank = rank(a);
+        const bRank = rank(b);
+        if (aRank.tier !== bRank.tier) return aRank.tier - bRank.tier;
+        if (aRank.tier === 2 || aRank.value === bRank.value) return aRank.placement - bRank.placement;
+        return (aRank.value - bRank.value) * direction;
+      });
+      rows.forEach(row => body.appendChild(row));
+    });
+  };
+  if (image.complete && image.naturalWidth) render();
+  else image.addEventListener('load', render, { once: true });
+}
+
+function render() {
+  const seasons = Store.getAllSeasons().filter(season => season.referenceImage);
+  tabs.innerHTML = '';
+  if (!seasons.length) {
+    sortableReferenceChart.hidden = true;
+    emptyNote.hidden = false;
+    return;
+  }
+  currentSeasonId = seasons.some(season => season.id === currentSeasonId) ? currentSeasonId : seasons[0].id;
+  for (const season of seasons) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.seasonId = season.id;
+    button.textContent = season.id;
+    button.addEventListener('click', () => showSeason(season.id));
+    tabs.appendChild(button);
+  }
+  showSeason(currentSeasonId);
+}
+
+preloadReferenceImages();
+render();
+</script>
+</body>
+</html>
