@@ -644,7 +644,9 @@ table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
   .plain#lb-table thead th,
   .plain#top-per-season-table thead th { font-size: 9px; }
   .plain#lb-table .name-cell,
-  .plain#top-per-season-table .name-cell { gap: 5px; min-width: 0; flex-wrap: wrap; }
+  .plain#top-per-season-table .name-cell { gap: 5px; min-width: 0; flex-wrap: nowrap; }
+  .plain#lb-table .name-cell > :last-child,
+  .plain#top-per-season-table .name-cell > :last-child { min-width: 0; overflow-wrap: anywhere; }
   .plain#lb-table .avatar,
   .plain#top-per-season-table .avatar { width: 22px; height: 22px; min-width: 22px; }
   .plain#lb-table .rank-chip { min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; }
