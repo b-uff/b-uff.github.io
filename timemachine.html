@@ -203,7 +203,7 @@ function renderRace(animate) {
       row.className = 'bar-row';
       const headshot = headshotUrl(entry.headshotName, season.id);
       const avatar = headshot
-        ? `<img class="bar-avatar" src="${headshot}" alt="" onerror="this.hidden=true">`
+        ? `<img class="bar-avatar" src="${headshot}" alt="" style="width:22px;height:22px;min-width:22px;border-radius:50%;object-fit:cover;display:inline-block;flex:0 0 auto" onerror="this.hidden=true">`
         : '';
       row.innerHTML = `<div class="bar-label"><span class="bar-name">${escapeHtml(entry.name)}</span>${avatar}</div><div class="bar-track"><div class="bar-value"></div></div>`;
       row.segments = new Map();
