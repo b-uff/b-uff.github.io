@@ -253,7 +253,7 @@ button.secondary:hover { border-color: var(--accent); color: var(--accent-dark);
 .public-charts-page .public-chart-panel { display: flex; flex: 1; min-height: 0; margin-bottom: 0; }
 .public-charts-page .chart-workspace { flex: 1; min-height: 0; }
 .public-charts-page .season-sidebar { display: flex; flex-direction: column; min-height: 0; }
-.public-charts-page .season-tabs { min-height: 0; overflow-y: auto; padding-right: 4px; }
+.public-charts-page .season-tabs { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
 .public-charts-page .chart-content { min-height: 0; }
 .public-charts-page .table-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; }
 
@@ -289,7 +289,7 @@ button.secondary:hover { border-color: var(--accent); color: var(--accent-dark);
   .public-charts-page .public-chart-panel { display: flex; flex: 1; min-height: 0; overflow: hidden; }
   .public-charts-page .chart-workspace { display: grid; grid-template-columns: 132px minmax(0, 1fr); flex: 1; min-height: 0; }
   .public-charts-page .season-sidebar { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); border-bottom: 0; padding: 0 14px 0 0; overflow: hidden; }
-  .public-charts-page .season-tabs { min-height: 0; overflow-y: auto; }
+  .public-charts-page .season-tabs { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
   .public-charts-page .chart-content { min-height: 0; overflow: hidden; }
   .public-charts-page .table-scroll { height: 100%; overflow: auto; overscroll-behavior: contain; }
 }
