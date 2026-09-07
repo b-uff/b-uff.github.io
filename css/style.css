@@ -622,6 +622,49 @@ table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
 .plain#lb-table th, .plain#lb-table td,
 .plain#top-per-season-table th, .plain#top-per-season-table td,
 .plain#season-rank-table th, .plain#season-rank-table td { padding: 7px 10px; }
+@media (max-width: 600px) {
+  .plain#lb-table,
+  .plain#top-per-season-table {
+    width: 100% !important;
+    min-width: 0;
+    max-width: none;
+    table-layout: fixed;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    white-space: normal;
+  }
+  .plain#lb-table th,
+  .plain#lb-table td,
+  .plain#top-per-season-table th,
+  .plain#top-per-season-table td {
+    padding: 7px 5px;
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+  .plain#lb-table thead th,
+  .plain#top-per-season-table thead th { font-size: 9px; }
+  .plain#lb-table .name-cell,
+  .plain#top-per-season-table .name-cell { gap: 5px; min-width: 0; flex-wrap: wrap; }
+  .plain#lb-table .avatar,
+  .plain#top-per-season-table .avatar { width: 22px; height: 22px; min-width: 22px; }
+  .plain#lb-table .rank-chip { min-width: 20px; height: 20px; padding: 0 5px; font-size: 11px; }
+  .plain#lb-table th:nth-child(1),
+  .plain#lb-table td:nth-child(1) { width: 36px; }
+  .plain#lb-table th:nth-child(2),
+  .plain#lb-table td:nth-child(2) { width: 34%; }
+  .plain#lb-table th:nth-child(3),
+  .plain#lb-table td:nth-child(3) { width: 34%; }
+  .plain#lb-table th:nth-child(4),
+  .plain#lb-table td:nth-child(4) { width: 52px; }
+  .plain#top-per-season-table th:nth-child(1),
+  .plain#top-per-season-table td.rank-season { width: 52px; }
+  .plain#top-per-season-table th:nth-child(2),
+  .plain#top-per-season-table td.rank-houseguest { width: 42%; }
+  .plain#top-per-season-table th:nth-child(3),
+  .plain#top-per-season-table td.rank-placement { width: 58px; }
+  .plain#top-per-season-table th:nth-child(4),
+  .plain#top-per-season-table td.rank-dr { width: 52px; }
+}
 .lookback-row.evicted td {
   background: #d9dde2 !important;
   color: #6b7280;
