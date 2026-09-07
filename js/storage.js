@@ -21,6 +21,7 @@ const LS_HEADSHOTS = 'drchart:headshots';
 const REFERENCE_IMAGE_DB = 'drchart-reference-images';
 const referenceImages = new Map();
 const seasonDetails = new Map();
+let publishedSnapshot = null;
 
 function openReferenceImageDb() {
   return new Promise((resolve, reject) => {
@@ -102,35 +103,12 @@ const Store = {
 
   loadPublishedData(snapshot) {
     if (!snapshot || !Array.isArray(snapshot.seasons)) return false;
-    const previousIds = this.listSeasonIds();
-    for (const id of previousIds) localStorage.removeItem(LS_SEASON_PREFIX + id);
-    for (const seasonData of snapshot.seasons) {
-      const season = { ...seasonData };
-      if (season.referenceImage) {
-        referenceImages.set(season.id, season.referenceImage);
-        putReferenceImage(season.id, season.referenceImage).catch(error => console.error('Could not save published reference image', error));
-        delete season.referenceImage;
-      }
-      const detail = {};
-      for (const key of ['sourceGrid', 'columnWidths', 'rowHeights']) {
-        if (season[key]) {
-          detail[key] = season[key];
-          delete season[key];
-        }
-      }
-      if (Object.keys(detail).length) {
-        seasonDetails.set(season.id, detail);
-        putSeasonDetail(season.id, detail).catch(error => console.error('Could not save published chart detail', error));
-      }
-      localStorage.setItem(LS_SEASON_PREFIX + season.id, JSON.stringify(season));
-    }
-    localStorage.setItem(LS_SEASON_ORDER, JSON.stringify(snapshot.seasons.map(season => season.id)));
-    localStorage.setItem(LS_LINKS, JSON.stringify(snapshot.links || []));
-    localStorage.setItem(LS_HEADSHOTS, JSON.stringify(snapshot.headshots || {}));
+    publishedSnapshot = snapshot;
     return true;
   },
 
   listSeasonIds() {
+    if (publishedSnapshot) return publishedSnapshot.seasons.map(season => season.id);
     try {
       return JSON.parse(localStorage.getItem(LS_SEASON_ORDER) || '[]');
     } catch (e) {
@@ -150,6 +128,7 @@ const Store = {
   },
 
   getSeason(id) {
+    if (publishedSnapshot) return publishedSnapshot.seasons.find(season => season.id === id) || null;
     const raw = localStorage.getItem(LS_SEASON_PREFIX + id);
     if (!raw) return null;
     const season = JSON.parse(raw);
@@ -196,6 +175,7 @@ const Store = {
   },
 
   getHeadshotOverrides() {
+    if (publishedSnapshot) return publishedSnapshot.headshots || {};
     try {
       return JSON.parse(localStorage.getItem(LS_HEADSHOTS) || '{}');
     } catch (e) {
@@ -274,6 +254,7 @@ const Store = {
   // ---- Returning-player links ----
 
   getLinkGroups() {
+    if (publishedSnapshot) return publishedSnapshot.links || [];
     try {
       return JSON.parse(localStorage.getItem(LS_LINKS) || '[]');
     } catch (e) {
