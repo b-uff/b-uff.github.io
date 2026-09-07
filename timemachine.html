@@ -188,6 +188,7 @@ function renderRace(animate) {
     return {
       key: player.name,
       name: chartName(season, player),
+      headshotName: player.name,
       total,
       segments
     };
@@ -200,7 +201,11 @@ function renderRace(animate) {
     if (!row) {
       row = document.createElement('div');
       row.className = 'bar-row';
-      row.innerHTML = `<div class="bar-label">${escapeHtml(entry.name)}</div><div class="bar-track"><div class="bar-value"></div></div>`;
+      const headshot = headshotUrl(entry.headshotName, season.id);
+      const avatar = headshot
+        ? `<img class="bar-avatar" src="${headshot}" alt="" onerror="this.hidden=true">`
+        : '';
+      row.innerHTML = `<div class="bar-label"><span class="bar-name">${escapeHtml(entry.name)}</span>${avatar}</div><div class="bar-track"><div class="bar-value"></div></div>`;
       row.segments = new Map();
       raceRows.set(entry.key, row);
       container.appendChild(row);
@@ -243,6 +248,10 @@ function renderRace(animate) {
 
 racePlay.addEventListener('click', () => {
   if (raceTimer) { stopRace(); return; }
+  if (Number(raceScrub.value) >= Number(raceScrub.max)) {
+    raceScrub.value = 0;
+    renderRace(false);
+  }
   racePlay.textContent = 'Pause';
   raceTimer = setInterval(() => {
     const next = Number(raceScrub.value) + 1;
