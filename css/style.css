@@ -284,10 +284,11 @@ button.secondary:hover { border-color: var(--accent); color: var(--accent-dark);
 }
 @media (max-height: 520px) and (orientation: landscape) {
   html:has(.public-charts-page) { height: auto; overflow-y: auto; }
-  .public-charts-page { position: static; width: 100%; min-height: 100dvh; height: auto; overflow-y: auto; overscroll-behavior-y: contain; }
+  .public-charts-page { position: static; width: 100%; min-height: 100svh; height: auto; overflow-y: auto; overscroll-behavior-y: auto; }
   .public-charts-page .topnav { position: static; }
-  .public-charts-page main { display: block; height: auto; max-width: none; padding: 14px 12px 12px; overflow: visible; }
-  .public-charts-page .public-chart-panel { display: flex; height: calc(100dvh - 24px); min-height: 0; overflow: hidden; }
+  .public-charts-page main { display: block; height: auto; max-width: none; padding: 8px 10px 10px; overflow: visible; }
+  .public-charts-page h1 { font-size: 22px; margin: 8px 0; }
+  .public-charts-page .public-chart-panel { display: flex; height: 100svh; min-height: 0; margin-bottom: 0; overflow: hidden; }
   .public-charts-page .chart-workspace { display: grid; grid-template-columns: 132px minmax(0, 1fr); flex: 1; min-height: 0; height: 100%; }
   .public-charts-page .season-sidebar { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); border-bottom: 0; padding: 0 14px 0 0; overflow: hidden; }
   .public-charts-page .season-tabs { flex: 1; min-height: 0; max-height: none; overflow-y: auto; }
