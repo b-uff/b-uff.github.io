@@ -42,13 +42,11 @@ function render() {
     if (kind === 'can') return incCan;
     return incSpinoff;
   });
-  function compareSeasonsChronologically(a, b) {
-    const aMatch = /^(?:BB|BBCAN)(\d+)$/i.exec(a);
-    const bMatch = /^(?:BB|BBCAN)(\d+)$/i.exec(b);
-    if (aMatch && bMatch && Number(aMatch[1]) !== Number(bMatch[1])) {
-      return Number(aMatch[1]) - Number(bMatch[1]);
-    }
-    return a.localeCompare(b, undefined, { numeric: true });
+  const chartSeasonOrder = new Map(Store.getAllSeasons().map((season, index) => [season.id, index]));
+  function compareSeasonsByRankingsOrder(a, b) {
+    const aOrder = chartSeasonOrder.has(a) ? chartSeasonOrder.get(a) : -1;
+    const bOrder = chartSeasonOrder.has(b) ? chartSeasonOrder.get(b) : -1;
+    return (bOrder - aOrder) || a.localeCompare(b, undefined, { numeric: true });
   }
   function tieBreakFor(season, player) {
     const total = playerTotal(player);
@@ -98,9 +96,9 @@ function render() {
               if (Math.round(pl.placement) === 1) winningSeasons.add(ap.season);
             }
           }
-          seasonIds.sort(compareSeasonsChronologically);
-          const earliestSeason = seasonIds[0] || s.id;
-          rows.push({ name: p.name, seasons: seasonIds, winningSeasons, dr, ...tieBreakFor(s, p), tieSeason: earliestSeason });
+          seasonIds.sort(compareSeasonsByRankingsOrder);
+          const rankingsOrderSeason = seasonIds[0] || s.id;
+          rows.push({ name: p.name, seasons: seasonIds, winningSeasons, dr, ...tieBreakFor(s, p), tieSeason: rankingsOrderSeason });
         } else {
           consumed.add(k);
           rows.push({ name: p.name, seasons: [s.id], winningSeasons: Math.round(p.placement) === 1 ? new Set([s.id]) : new Set(), dr: playerTotal(p), ...tieBreakFor(s, p) });
@@ -111,7 +109,7 @@ function render() {
 
   rows.sort((a, b) =>
     (b.dr - a.dr) ||
-    compareSeasonsChronologically(a.tieSeason, b.tieSeason) ||
+    compareSeasonsByRankingsOrder(a.tieSeason, b.tieSeason) ||
     (a.reachedEpisode - b.reachedEpisode) ||
     (a.placement - b.placement) ||
     a.name.localeCompare(b.name)
