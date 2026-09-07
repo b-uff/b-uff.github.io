@@ -37,17 +37,6 @@ const emptyNote = document.getElementById('empty-note');
 const decodedImages = new Map();
 let currentSeasonId = null;
 
-function updateLandscapeChartScale() {
-  sortableReferenceChart.style.zoom = '';
-  if (!window.matchMedia('(max-height: 520px) and (orientation: landscape)').matches) return;
-  const scroller = sortableReferenceChart.closest('.table-scroll');
-  const chartHeight = sortableReferenceChart.scrollHeight;
-  const availableHeight = scroller ? scroller.clientHeight : 0;
-  if (!chartHeight || !availableHeight) return;
-  const scale = Math.min(1, Math.max(0.2, (availableHeight - 2) / chartHeight));
-  sortableReferenceChart.style.zoom = String(scale);
-}
-
 function preloadReferenceImages() {
   for (const season of Store.getAllSeasons()) {
     if (!season.referenceImage || decodedImages.has(season.id)) continue;
@@ -56,16 +45,9 @@ function preloadReferenceImages() {
     decodedImages.set(season.id, image);
   }
 }
-  const renderAndScale = () => {
-    render();
-    requestAnimationFrame(updateLandscapeChartScale);
-  };
-  if (image.complete && image.naturalWidth) renderAndScale();
-  else image.addEventListener('load', renderAndScale, { once: true });
-  currentSeasonId = id;
 
-window.addEventListener('resize', updateLandscapeChartScale);
-window.addEventListener('orientationchange', () => requestAnimationFrame(updateLandscapeChartScale));
+function showSeason(id) {
+  currentSeasonId = id;
   const season = Store.getSeason(id);
   tabs.querySelectorAll('button').forEach(button => {
     button.classList.toggle('active', button.dataset.seasonId === id);
