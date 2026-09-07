@@ -37,6 +37,17 @@ const emptyNote = document.getElementById('empty-note');
 const decodedImages = new Map();
 let currentSeasonId = null;
 
+function updateLandscapeChartScale() {
+  sortableReferenceChart.style.zoom = '';
+  if (!window.matchMedia('(max-height: 520px) and (orientation: landscape)').matches) return;
+  const scroller = sortableReferenceChart.closest('.table-scroll');
+  const chartHeight = sortableReferenceChart.scrollHeight;
+  const availableHeight = scroller ? scroller.clientHeight : 0;
+  if (!chartHeight || !availableHeight) return;
+  const scale = Math.min(1, Math.max(0.2, (availableHeight - 2) / chartHeight));
+  sortableReferenceChart.style.zoom = String(scale);
+}
+
 function preloadReferenceImages() {
   for (const season of Store.getAllSeasons()) {
     if (!season.referenceImage || decodedImages.has(season.id)) continue;
@@ -45,9 +56,16 @@ function preloadReferenceImages() {
     decodedImages.set(season.id, image);
   }
 }
-
-function showSeason(id) {
+  const renderAndScale = () => {
+    render();
+    requestAnimationFrame(updateLandscapeChartScale);
+  };
+  if (image.complete && image.naturalWidth) renderAndScale();
+  else image.addEventListener('load', renderAndScale, { once: true });
   currentSeasonId = id;
+
+window.addEventListener('resize', updateLandscapeChartScale);
+window.addEventListener('orientationchange', () => requestAnimationFrame(updateLandscapeChartScale));
   const season = Store.getSeason(id);
   tabs.querySelectorAll('button').forEach(button => {
     button.classList.toggle('active', button.dataset.seasonId === id);
@@ -83,9 +101,7 @@ function renderSortableReferenceChart(season) {
     rowBoundaries[rowBoundaries.length - 1] = image.naturalHeight;
     const strip = rowIndex => {
       const element = document.createElement('div');
-      const isInteriorPlayerRow = rowIndex > bodyStart && rowIndex < bodyEnd;
-      const top = rowBoundaries[rowIndex] + (isInteriorPlayerRow ? 1 : 0) - (rowIndex === bodyEnd ? 1 : 0);
-      const isPlayerRow = rowIndex >= bodyStart && rowIndex < bodyEnd;
+      const top = rowBoundaries[rowIndex] - (rowIndex === bodyEnd ? 1 : 0);
       const bottom = rowBoundaries[rowIndex + 1] - (rowIndex === bodyEnd - 1 ? 1 : 0);
       element.className = 'reference-strip';
       element.style.width = image.naturalWidth + 'px';
@@ -102,9 +118,6 @@ function renderSortableReferenceChart(season) {
     for (let row = 0; row < bodyStart; row++) header.appendChild(strip(row));
     for (let row = bodyStart; row < bodyEnd; row++) {
       const playerRow = strip(row);
-      playerRow.classList.add('player-strip');
-      if (row > bodyStart) playerRow.classList.add('interior-player-strip');
-      if (row === bodyEnd - 1) playerRow.classList.add('last-player-strip');
       playerRow.dataset.sourceRow = row;
       body.appendChild(playerRow);
     }
