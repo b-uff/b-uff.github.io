@@ -42,7 +42,6 @@ function render() {
     if (kind === 'can') return incCan;
     return incSpinoff;
   });
-  const seasonOrder = new Map(Store.listSeasonIds().map((id, index) => [id, index]));
   function compareSeasonsChronologically(a, b) {
     const aMatch = /^(?:BB|BBCAN)(\d+)$/i.exec(a);
     const bMatch = /^(?:BB|BBCAN)(\d+)$/i.exec(b);
@@ -64,7 +63,7 @@ function render() {
       }
     }
     return {
-      seasonOrder: seasonOrder.get(season.id),
+      tieSeason: season.id,
       reachedEpisode,
       placement: player.placement
     };
@@ -111,7 +110,7 @@ function render() {
 
   rows.sort((a, b) =>
     (b.dr - a.dr) ||
-    (a.seasonOrder - b.seasonOrder) ||
+    compareSeasonsChronologically(a.tieSeason, b.tieSeason) ||
     (a.reachedEpisode - b.reachedEpisode) ||
     (a.placement - b.placement) ||
     a.name.localeCompare(b.name)
