@@ -551,6 +551,20 @@ table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
   width: 120px; font-size: 12px; text-align: right; flex: 0 0 auto; font-weight: 700;
   display: flex; align-items: center; justify-content: flex-end; gap: 6px;
 }
+.bar-row .bar-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-row .bar-avatar {
+  width: 22px; height: 22px; min-width: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+}
 .bar-row .bar-track {
   flex: 1;
   background: #efece5;
