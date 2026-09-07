@@ -256,6 +256,21 @@ button.secondary:hover { border-color: var(--accent); color: var(--accent-dark);
 .public-charts-page .season-tabs { min-height: 0; overflow-y: auto; padding-right: 4px; }
 .public-charts-page .chart-content { min-height: 0; }
 .public-charts-page .table-scroll { height: 100%; overflow-x: auto; overflow-y: hidden; }
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 600px) {
+  main { padding: 14px 12px 28px; }
+  h1 { font-size: 20px; }
+  .page-tagline { font-size: 12.5px; }
+  .topnav { padding: 10px 14px; }
+  .topnav .brand { font-size: 12px; }
+  .topnav a { padding: 6px 10px; font-size: 11px; }
+  .panel { padding: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .controls { gap: 10px; }
+  table.plain { display: table; width: auto !important; min-width: max-content; max-width: none; margin-left: auto !important; margin-right: auto !important; white-space: nowrap; }
+  table.plain th, table.plain td { padding: 8px 10px; }
+}
 @media (max-width: 700px) {
   .chart-workspace { grid-template-columns: 1fr; gap: 12px; }
   .season-sidebar { border-right: 0; border-bottom: 1px solid var(--border); padding: 0 0 12px; }
@@ -263,7 +278,14 @@ button.secondary:hover { border-color: var(--accent); color: var(--accent-dark);
   .public-charts-page { height: auto; overflow: auto; }
   .public-charts-page main { display: block; height: auto; }
   .public-charts-page .public-chart-panel { display: block; }
-  .public-charts-page .season-tabs { max-height: 180px; }
+  .public-charts-page .season-tabs { grid-auto-rows: 32px; max-height: 108px; overflow-y: auto; }
+  .public-charts-page .season-tabs button { min-height: 32px; }
+  .public-charts-page .table-scroll { height: auto; overflow-x: auto; overflow-y: visible; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .public-charts-page { height: auto; overflow: auto; }
+  .public-charts-page main { height: auto; }
+  .public-charts-page .table-scroll { height: auto; overflow-x: auto; overflow-y: visible; }
 }
 
 /* ---------- The spreadsheet-faithful DR chart ---------- */
