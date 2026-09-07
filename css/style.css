@@ -555,6 +555,7 @@ table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
 .bar-row .bar-avatar {
   width: 22px; height: 22px; min-width: 22px;
   border-radius: 50%;
+  object-fit: cover;
   display: inline-flex;
   align-items: center;
   justify-content: center;
