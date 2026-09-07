@@ -99,7 +99,8 @@ function render() {
             }
           }
           seasonIds.sort(compareSeasonsChronologically);
-          rows.push({ name: p.name, seasons: seasonIds, winningSeasons, dr, ...tieBreakFor(s, p) });
+          const earliestSeason = seasonIds[0] || s.id;
+          rows.push({ name: p.name, seasons: seasonIds, winningSeasons, dr, ...tieBreakFor(s, p), tieSeason: earliestSeason });
         } else {
           consumed.add(k);
           rows.push({ name: p.name, seasons: [s.id], winningSeasons: Math.round(p.placement) === 1 ? new Set([s.id]) : new Set(), dr: playerTotal(p), ...tieBreakFor(s, p) });
