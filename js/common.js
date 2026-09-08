@@ -53,6 +53,22 @@ const NAME_IMAGE_OVERRIDES = {
   'BBOTT::Jason Roy': 'https://cdn.brantsteele.com/images/bigbrother/ott/01/jasonroy.png'
 };
 
+/** Returns a human-readable season title, e.g. "BB22" -> "Big Brother 22". */
+function seasonDisplayName(seasonId) {
+  const id = (seasonId || '').toUpperCase();
+  const canadaSeason = /^BBCAN(\d+)$/.exec(id);
+  if (canadaSeason) return `Big Brother Canada ${canadaSeason[1]}`;
+  const reindeerSeason = /^BBRG(\d+)?$/.exec(id);
+  if (reindeerSeason) return `Big Brother: Reindeer Games${reindeerSeason[1] ? ' ' + reindeerSeason[1] : ''}`;
+  const ottSeason = /^BBOTT(\d+)?$/.exec(id);
+  if (ottSeason) return `Big Brother: Over the Top${ottSeason[1] ? ' ' + ottSeason[1] : ''}`;
+  const celebritySeason = /^CBB(\d+)$/.exec(id);
+  if (celebritySeason) return `Celebrity Big Brother ${celebritySeason[1]}`;
+  const usSeason = /^BB(\d+)$/.exec(id);
+  if (usSeason) return `Big Brother ${usSeason[1]}`;
+  return seasonId;
+}
+
 function headshotUrl(name, seasonId) {
   const override = window.Store && Store.getHeadshotOverride(seasonId, name);
   if (override) return override;
