@@ -220,28 +220,33 @@ function renderRace(animate) {
         row.segments.delete(key);
       }
     }
+    const markerWidth = 3;
     let offset = 0;
+    let markerOffset = 0;
     for (const segmentData of entry.segments) {
       const key = String(segmentData.key);
       let segment = row.segments.get(key);
-      const width = (segmentData.visualValue / maximum) * 100;
+      const valueWidth = (segmentData.visualValue / maximum) * 100;
+      const left = `calc(${offset}% + ${markerOffset}px)`;
+      const width = `calc(${valueWidth}% + ${markerWidth}px)`;
       if (!segment) {
         segment = document.createElement('div');
         segment.className = 'bar-segment';
         segment.style.background = segmentData.color;
-        segment.style.left = offset + '%';
-        segment.style.width = segmentData.zero ? '3px' : '0%';
+        segment.style.left = left;
+        segment.style.width = markerWidth + 'px';
         if (segmentData.zero) segment.classList.add('zero-segment');
         row.segments.set(key, segment);
         track.appendChild(segment);
-        requestAnimationFrame(() => { segment.style.width = width + '%'; });
+        requestAnimationFrame(() => { segment.style.width = width; });
       } else {
-        segment.style.left = offset + '%';
-        segment.style.width = width + '%';
+        segment.style.left = left;
+        segment.style.width = width;
       }
-      offset += width;
+      offset += valueWidth;
+      markerOffset += markerWidth;
     }
-    row.querySelector('.bar-value').style.left = (entry.total / maximum) * 100 + '%';
+    row.querySelector('.bar-value').style.left = `calc(${(entry.total / maximum) * 100}% + ${entry.segments.length * markerWidth}px)`;
     animateRaceTotal(row, entry.total, duration);
   });
 }
