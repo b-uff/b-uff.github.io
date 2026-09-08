@@ -197,7 +197,6 @@ function renderRace(animate) {
   const duration = animate ? Math.max(120, Math.round(Number(raceSpeed.value) * 0.82)) : 0;
   container.style.height = (rows.length * 29) + 'px';
   const markerWidth = 3;
-  const markerSlots = Math.max(1, ...rows.map(row => row.segments.length));
   rows.forEach((entry, index) => {
     let row = raceRows.get(entry.key);
     if (!row) {
@@ -223,21 +222,36 @@ function renderRace(animate) {
       }
     }
     const trackWidth = track.clientWidth || 1;
-    const valueUnitWidth = Math.max(0, trackWidth - (markerSlots * markerWidth)) / maximum;
+    const valueUnitWidth = trackWidth / maximum;
+    const barEnd = Math.min(trackWidth, entry.total * valueUnitWidth);
     let offset = 0;
-    let markerOffset = 0;
+    const zeroRuns = new Map();
+    for (let i = 0; i < entry.segments.length; i++) {
+      if (!entry.segments[i].zero) continue;
+      let runLength = 1;
+      while (entry.segments[i + runLength] && entry.segments[i + runLength].zero) runLength++;
+      for (let runIndex = 0; runIndex < runLength; runIndex++) {
+        zeroRuns.set(String(entry.segments[i + runIndex].key), { runIndex, runLength });
+      }
+      i += runLength - 1;
+    }
     for (const segmentData of entry.segments) {
       const key = String(segmentData.key);
       let segment = row.segments.get(key);
-      const valueWidth = segmentData.visualValue * valueUnitWidth;
-      const left = (offset + markerOffset) + 'px';
-      const width = (valueWidth + markerWidth) + 'px';
+      const rawValueWidth = segmentData.visualValue * valueUnitWidth;
+      const valueWidth = segmentData.zero ? 0 : Math.min(rawValueWidth, Math.max(0, barEnd - offset));
+      const zeroRun = zeroRuns.get(key);
+      const markerLeft = segmentData.zero && zeroRun
+        ? offset - (zeroRun.runLength * markerWidth) + (zeroRun.runIndex * markerWidth)
+        : offset;
+      const left = Math.max(0, Math.min(trackWidth - markerWidth, markerLeft)) + 'px';
+      const width = (segmentData.zero ? markerWidth : valueWidth) + 'px';
       if (!segment) {
         segment = document.createElement('div');
         segment.className = 'bar-segment';
         segment.style.background = segmentData.color;
         segment.style.left = left;
-        segment.style.width = markerWidth + 'px';
+        segment.style.width = segmentData.zero ? width : '0px';
         if (segmentData.zero) segment.classList.add('zero-segment');
         row.segments.set(key, segment);
         track.appendChild(segment);
@@ -247,9 +261,10 @@ function renderRace(animate) {
         segment.style.width = width;
       }
       offset += valueWidth;
-      markerOffset += markerWidth;
     }
-    row.querySelector('.bar-value').style.left = Math.min(trackWidth, (entry.total * valueUnitWidth) + (entry.segments.length * markerWidth)) + 'px';
+    const value = row.querySelector('.bar-value');
+    value.style.left = barEnd + 'px';
+    value.classList.toggle('outside', barEnd < 34);
     animateRaceTotal(row, entry.total, duration);
   });
 }
