@@ -15,6 +15,7 @@
         <div id="season-tabs" class="season-tabs"></div>
       </aside>
       <div class="chart-content">
+        <h2 id="chart-season-title" class="chart-season-title"></h2>
         <div class="table-scroll">
           <div id="sortable-reference-chart" class="sortable-reference-chart" hidden></div>
           <p id="empty-note" class="muted" hidden>No published charts are available yet.</p>
@@ -33,6 +34,7 @@ renderFooter();
 const tabs = document.getElementById('season-tabs');
 const sortableReferenceChart = document.getElementById('sortable-reference-chart');
 const emptyNote = document.getElementById('empty-note');
+const chartSeasonTitle = document.getElementById('chart-season-title');
 const decodedImages = new Map();
 let currentSeasonId = null;
 
@@ -48,6 +50,7 @@ function preloadReferenceImages() {
 function showSeason(id) {
   currentSeasonId = id;
   const season = Store.getSeason(id);
+  chartSeasonTitle.textContent = season ? seasonDisplayName(id) : '';
   tabs.querySelectorAll('button').forEach(button => {
     button.classList.toggle('active', button.dataset.seasonId === id);
   });
