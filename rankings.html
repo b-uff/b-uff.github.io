@@ -19,7 +19,7 @@
   </div>
 
   <div class="panel">
-    <h2>📊 Season ranking (by total <span class="drs-label">DR<span class="drs-s">s</span></span>)</h2>
+    <h2>📊 Season ranking</h2>
     <table class="plain" id="season-rank-table">
       <thead><tr><th>Rank</th><th>Season</th><th>Total <span class="drs-label">DR<span class="drs-s">s</span></span></th></tr></thead>
       <tbody></tbody>
@@ -57,6 +57,14 @@ renderFooter();
 
 const seasons = Store.getAllSeasons();
 document.getElementById('rk-empty').style.display = seasons.length ? 'none' : 'block';
+
+// Same season tiebreak order used by Most DRs per season and the Leaderboard.
+const seasonOrder = new Map(seasons.map((s, i) => [s.id, i]));
+function compareBySeasonOrder(aSeason, bSeason) {
+  const aOrder = seasonOrder.has(aSeason) ? seasonOrder.get(aSeason) : -1;
+  const bOrder = seasonOrder.has(bSeason) ? seasonOrder.get(bSeason) : -1;
+  return (bOrder - aOrder) || aSeason.localeCompare(bSeason, undefined, { numeric: true });
+}
 
 function renderTopPerSeason() {
   const orderedSeasons = seasons.slice().reverse();
@@ -122,7 +130,7 @@ function renderPlacementRankings() {
     return;
   }
   for (const placement of placements) {
-    const entries = byPlacement.get(placement).sort((a, b) => (b.dr - a.dr) || a.name.localeCompare(b.name));
+    const entries = byPlacement.get(placement).sort((a, b) => (b.dr - a.dr) || compareBySeasonOrder(a.season, b.season) || a.name.localeCompare(b.name));
     const label = document.createElement('div');
     label.style.fontWeight = '600';
     label.style.margin = '10px 0 4px';
@@ -184,7 +192,7 @@ function renderHouseguestsRemaining() {
     return;
   }
   for (const rc of remainingCounts) {
-    const top5 = byRemaining.get(rc).sort((a, b) => (b.value - a.value) || a.name.localeCompare(b.name)).slice(0, 5);
+    const top5 = byRemaining.get(rc).sort((a, b) => (b.value - a.value) || compareBySeasonOrder(a.season, b.season) || a.name.localeCompare(b.name)).slice(0, 5);
     const label = document.createElement('div');
     label.style.fontWeight = '600';
     label.style.margin = '10px 0 4px';
