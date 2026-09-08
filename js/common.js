@@ -12,7 +12,7 @@ function renderNav(activeHref) {
   nav.className = 'topnav';
   const brand = document.createElement('div');
   brand.className = 'brand';
-  brand.innerHTML = 'Big Brother DR Charts <span class="beta-tag">Beta</span>';
+  brand.innerHTML = 'Big Brother Diary Room Count <span class="beta-tag">Beta</span>';
   nav.appendChild(brand);
   const links = document.createElement('div');
   links.className = 'nav-links';
