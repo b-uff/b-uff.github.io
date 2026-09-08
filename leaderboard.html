@@ -17,7 +17,7 @@
       <label><input type="checkbox" id="group-returning" checked> Group returning appearances</label>
     </div>
     <table class="plain" id="lb-table">
-      <thead><tr><th>Rank</th><th>Houseguest</th><th>Season(s)</th><th># of DRs</th></tr></thead>
+      <thead><tr><th>Rank</th><th>Houseguest</th><th id="lb-season-header">Season(s)</th><th># of <span class="drs-label">DR<span class="drs-s">s</span></span></th></tr></thead>
       <tbody></tbody>
     </table>
     <p class="muted" id="empty-note" style="display:none">No seasons match the current filters. Import a season or adjust the checkboxes above.</p>
@@ -35,6 +35,7 @@ function render() {
   const incCan = document.getElementById('inc-can').checked;
   const incSpinoff = document.getElementById('inc-spinoff').checked;
   const grouping = document.getElementById('group-returning').checked;
+  document.getElementById('lb-season-header').textContent = grouping ? 'Season(s)' : 'Season';
 
   const seasons = Store.getAllSeasons().filter(s => {
     const kind = seasonKind(s.id);
