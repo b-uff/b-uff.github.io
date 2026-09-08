@@ -46,6 +46,11 @@
     <div id="houseguests-remaining"></div>
   </div>
 
+  <div class="panel hall-colors-panel">
+    <h2>🎨 Hall of Colors</h2>
+    <div id="hall-colors-grid" class="hall-colors-grid"></div>
+  </div>
+
   <p class="muted" id="rk-empty" style="display:none">Import a season on the Charts page first.</p>
 </main>
 <script src="js/published-data.js"></script>
@@ -64,6 +69,40 @@ function compareBySeasonOrder(aSeason, bSeason) {
   const aOrder = seasonOrder.has(aSeason) ? seasonOrder.get(aSeason) : -1;
   const bOrder = seasonOrder.has(bSeason) ? seasonOrder.get(bSeason) : -1;
   return (bOrder - aOrder) || aSeason.localeCompare(bSeason, undefined, { numeric: true });
+}
+
+const COLOR_ORDER = [
+  { key: 'blue', label: 'Blue' },
+  { key: 'green', label: 'Green' },
+  { key: 'yellow', label: 'Yellow' },
+  { key: 'orange', label: 'Orange' },
+  { key: 'red', label: 'Red' }
+];
+
+function parseColor(color) {
+  const match = /rgba?\((\d+),\s*(\d+),\s*(\d+)/i.exec(color || '');
+  return match ? { r: Number(match[1]), g: Number(match[2]), b: Number(match[3]) } : null;
+}
+
+function colorBucket(color) {
+  const rgb = parseColor(color);
+  if (!rgb) return null;
+  const { r, g, b } = rgb;
+  if (r < 30 && g < 30 && b < 30) return null;
+  if (b > 180 && r < 80 && g < 180) return 'blue';
+  if (g > 180 && r < 80 && b < 80) return 'green';
+  if (r > 200 && g > 200 && b < 80) return 'yellow';
+  if (r > 200 && g >= 70 && g < 180 && b < 80) return 'orange';
+  if (r > 180 && g < 110 && b < 110) return 'red';
+  return null;
+}
+
+function hallColorHonoreeHtml(winner) {
+  const headshot = headshotUrl(winner.name, winner.season);
+  const portrait = headshot
+    ? `<img class="color-portrait" src="${headshot}" alt="" onerror="this.hidden=true">`
+    : '';
+  return `<div class="color-honoree">${portrait}<div class="color-honoree-name">${escapeHtml(winner.chartName)}</div><div class="color-season">${escapeHtml(winner.season)}</div></div>`;
 }
 
 function renderTopPerSeason() {
@@ -210,11 +249,49 @@ function renderHouseguestsRemaining() {
   }
 }
 
+function renderHallOfColors() {
+  const grid = document.getElementById('hall-colors-grid');
+  const buckets = new Map(COLOR_ORDER.map(color => [color.key, []]));
+  for (const season of seasons) {
+    for (const [playerIndex, player] of season.players.entries()) {
+      const sourceRow = season.sourceGrid && season.sourceGrid[season.headerRows + playerIndex];
+      const nameCell = sourceRow && sourceRow.find(cell => cell && cell.c === 1);
+      const chartName = nameCell && nameCell.display ? nameCell.display : player.name;
+      const counts = Object.fromEntries(COLOR_ORDER.map(color => [color.key, 0]));
+      for (const episode of player.episodes) {
+        if (!isCountedCell(episode)) continue;
+        const bucket = colorBucket(episode.color);
+        if (bucket) counts[bucket]++;
+      }
+      for (const weeklyTotal of player.weeklyTotals || []) {
+        if (!weeklyTotal) continue;
+        const bucket = colorBucket(weeklyTotal.color);
+        if (bucket) counts[bucket]++;
+      }
+      for (const color of COLOR_ORDER) {
+        buckets.get(color.key).push({ name: player.name, chartName, season: season.id, count: counts[color.key] });
+      }
+    }
+  }
+  grid.innerHTML = COLOR_ORDER.map(color => {
+    const winners = buckets.get(color.key)
+      .filter(entry => entry.count > 0)
+      .sort((a, b) => (b.count - a.count) || compareBySeasonOrder(a.season, b.season) || a.name.localeCompare(b.name));
+    const topCount = winners[0] ? winners[0].count : 0;
+    const tied = winners.filter(entry => entry.count === topCount);
+    const content = tied.length
+      ? `<div class="color-winners">${tied.map(hallColorHonoreeHtml).join('')}</div>`
+      : '<div class="muted">No data</div>';
+    return `<section class="color-tile color-${color.key}"><div class="color-title">${escapeHtml(color.label.toUpperCase())}</div><div class="color-body">${content}</div></section>`;
+  }).join('');
+}
+
 if (seasons.length) {
   renderTopPerSeason();
   renderSeasonRanking();
   renderPlacementRankings();
   renderHouseguestsRemaining();
+  renderHallOfColors();
 
   ['pr-inc-us','pr-inc-can','pr-inc-spinoff'].forEach(id =>
     document.getElementById(id).addEventListener('change', renderPlacementRankings));
