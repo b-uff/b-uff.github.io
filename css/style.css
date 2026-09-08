@@ -405,6 +405,7 @@ table.plain thead th {
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
+.drs-s { font-size: 0.68em; }
 table.plain th.sort-asc::after { content: ' \25B2'; color: var(--accent); }
 table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
 
