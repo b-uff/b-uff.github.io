@@ -3,8 +3,8 @@
 const PAGES = [
   { href: 'charts.html', label: 'Charts' },
   { href: 'leaderboard.html', label: 'Leaderboard' },
-  { href: 'timemachine.html', label: 'Lookback' },
-  { href: 'rankings.html', label: 'Rankings' }
+  { href: 'timemachine.html', label: 'Snapshot' },
+  { href: 'rankings.html', label: 'Records' }
 ];
 
 function renderNav(activeHref) {
