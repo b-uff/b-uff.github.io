@@ -196,6 +196,8 @@ function renderRace(animate) {
   const container = document.getElementById('timeline-bars');
   const duration = animate ? Math.max(120, Math.round(Number(raceSpeed.value) * 0.82)) : 0;
   container.style.height = (rows.length * 29) + 'px';
+  const markerWidth = 3;
+  const markerSlots = Math.max(1, ...rows.map(row => row.segments.length));
   rows.forEach((entry, index) => {
     let row = raceRows.get(entry.key);
     if (!row) {
@@ -220,15 +222,16 @@ function renderRace(animate) {
         row.segments.delete(key);
       }
     }
-    const markerWidth = 3;
+    const trackWidth = track.clientWidth || 1;
+    const valueUnitWidth = Math.max(0, trackWidth - (markerSlots * markerWidth)) / maximum;
     let offset = 0;
     let markerOffset = 0;
     for (const segmentData of entry.segments) {
       const key = String(segmentData.key);
       let segment = row.segments.get(key);
-      const valueWidth = (segmentData.visualValue / maximum) * 100;
-      const left = `calc(${offset}% + ${markerOffset}px)`;
-      const width = `calc(${valueWidth}% + ${markerWidth}px)`;
+      const valueWidth = segmentData.visualValue * valueUnitWidth;
+      const left = (offset + markerOffset) + 'px';
+      const width = (valueWidth + markerWidth) + 'px';
       if (!segment) {
         segment = document.createElement('div');
         segment.className = 'bar-segment';
@@ -246,7 +249,7 @@ function renderRace(animate) {
       offset += valueWidth;
       markerOffset += markerWidth;
     }
-    row.querySelector('.bar-value').style.left = `calc(${(entry.total / maximum) * 100}% + ${entry.segments.length * markerWidth}px)`;
+    row.querySelector('.bar-value').style.left = Math.min(trackWidth, (entry.total * valueUnitWidth) + (entry.segments.length * markerWidth)) + 'px';
     animateRaceTotal(row, entry.total, duration);
   });
 }
@@ -267,6 +270,8 @@ racePlay.addEventListener('click', () => {
 });
 raceScrub.addEventListener('input', () => { stopRace(); renderRace(false); });
 raceSpeed.addEventListener('change', () => { if (raceTimer) { stopRace(); racePlay.click(); } });
+window.addEventListener('resize', () => renderRace(false));
+window.addEventListener('orientationchange', () => requestAnimationFrame(() => renderRace(false)));
 
 populateSeasons();
 if (seasonSel.value) renderResults();
