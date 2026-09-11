@@ -450,7 +450,16 @@ table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
   flex: 0 0 auto;
   object-fit: cover;
 }
-.season-trophy { font-size: 12px; margin-left: 2px; }
+.season-winner {
+  display: inline !important;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #f4d36a;
+  color: #352300;
+  font-weight: 700;
+  line-height: inherit;
+  vertical-align: -0.08em;
+}
 .missing-headshots { display: grid; gap: 6px; max-width: 640px; }
 .missing-headshot-row { align-items: center; border-bottom: 1px solid var(--border); display: flex; gap: 14px; justify-content: space-between; padding: 8px 0; }
 .missing-headshot-row span { font-weight: 700; }
