@@ -122,7 +122,9 @@ function render() {
     const tr = document.createElement('tr');
     const nonReindeerSeasons = r.seasons.filter(season => !/^BBRG/i.test(season));
     const mostRecentSeason = nonReindeerSeasons[nonReindeerSeasons.length - 1] || r.seasons[r.seasons.length - 1];
-    const seasonLabels = r.seasons.map(season => `${escapeHtml(season)}${r.winningSeasons && r.winningSeasons.has(season) ? '<span class="season-trophy" title="Season winner">🏆</span>' : ''}`);
+    const seasonLabels = r.seasons.map(season => r.winningSeasons && r.winningSeasons.has(season)
+      ? `<span class="season-winner" title="Season winner">${escapeHtml(season)}</span>`
+      : escapeHtml(season));
     tr.innerHTML = `<td>${rankChipHtml(i+1)}</td><td data-name="${escapeHtml(r.name)}">${nameCellHtml(r.name, mostRecentSeason)}</td><td>${seasonLabels.join(' / ')}</td><td>${formatNum(r.dr)}</td>`;
     tbody.appendChild(tr);
   });
