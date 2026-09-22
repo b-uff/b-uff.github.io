@@ -1,10 +1,10 @@
 /* common.js - shared nav bar, stats helpers, sorting utility */
 
 const PAGES = [
-  { href: 'charts.html', label: 'Charts' },
-  { href: 'leaderboard.html', label: 'Leaderboard' },
-  { href: 'timemachine.html', label: 'Snapshot' },
-  { href: 'rankings.html', label: 'Records' }
+  { href: '/', label: 'Charts' },
+  { href: '/leaderboard', label: 'Leaderboard' },
+  { href: '/snapshot', label: 'Snapshot' },
+  { href: '/records', label: 'Records' }
 ];
 
 function renderNav(activeHref) {
