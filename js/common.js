@@ -2,9 +2,9 @@
 
 const PAGES = [
   { href: '/', label: 'Charts' },
-  { href: '/leaderboard', label: 'Leaderboard' },
-  { href: '/snapshot', label: 'Snapshot' },
-  { href: '/records', label: 'Records' }
+  { href: '/leaderboard/', label: 'Leaderboard' },
+  { href: '/snapshot/', label: 'Snapshot' },
+  { href: '/records/', label: 'Records' }
 ];
 
 function renderNav(activeHref) {
