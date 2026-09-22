@@ -263,9 +263,11 @@ function renderRace(animate) {
       offset += valueWidth;
     }
     const value = row.querySelector('.bar-value');
-    value.style.left = barEnd + 'px';
-    // Keep the total to the right of the bar; only let the bar overtake it near the track's end.
-    value.classList.toggle('outside', (trackWidth - barEnd) >= 34);
+    const labelGap = 7;
+    const labelWidth = Math.max(value.offsetWidth, String(Math.round(entry.total)).length * 7);
+    const pinLabel = barEnd + labelGap + labelWidth >= trackWidth;
+    value.style.left = (pinLabel ? trackWidth - labelGap : barEnd) + 'px';
+    value.classList.toggle('pinned', pinLabel);
     animateRaceTotal(row, entry.total, duration);
   });
 }
