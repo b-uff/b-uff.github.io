@@ -264,7 +264,7 @@ function renderRace(animate) {
     }
     const value = row.querySelector('.bar-value');
     const labelGap = 7;
-    const maxLeft = Math.max(0, trackWidth - 36);
+    const maxLeft = Math.max(0, trackWidth - 28);
     const targetLeft = Math.min(barEnd + labelGap, maxLeft);
     value.style.left = targetLeft + 'px';
     value.style.transform = 'translateX(0)';
