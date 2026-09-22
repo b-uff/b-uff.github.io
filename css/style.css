@@ -647,12 +647,11 @@ table.plain th.sort-desc::after { content: ' \25BC'; color: var(--accent); }
   font-weight: 800;
   color: #111;
   position: absolute;
-  transform: translateX(7px);
+  transform: none;
   white-space: nowrap;
   z-index: 3;
 }
-.bar-row .bar-value.outside { transform: translateX(7px); }
-.bar-row .bar-value.pinned { transform: translateX(calc(-100% - 7px)); }
+.bar-row .bar-value.outside { transform: none; }
 
 @keyframes lookback-row-enter {
   from { opacity: 0; transform: translateY(8px); }

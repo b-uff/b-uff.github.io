@@ -264,10 +264,11 @@ function renderRace(animate) {
     }
     const value = row.querySelector('.bar-value');
     const labelGap = 7;
-    const labelWidth = Math.max(value.offsetWidth, String(Math.round(entry.total)).length * 7);
-    const pinLabel = barEnd + labelGap + labelWidth >= trackWidth;
-    value.style.left = (pinLabel ? trackWidth - labelGap : barEnd) + 'px';
-    value.classList.toggle('pinned', pinLabel);
+    const maxLeft = Math.max(0, trackWidth - 36);
+    const targetLeft = Math.min(barEnd + labelGap, maxLeft);
+    value.style.left = targetLeft + 'px';
+    value.style.transform = 'translateX(0)';
+    value.classList.remove('pinned');
     animateRaceTotal(row, entry.total, duration);
   });
 }
